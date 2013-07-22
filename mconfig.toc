@@ -1,0 +1,8 @@
+## Interface: 50300
+## Title: |cffff8000mConfig
+## Notes: Configuration Library
+## Dependencies:
+## SavedVariablesPerCharacter: mConfigData
+
+mconfig.lua
+
