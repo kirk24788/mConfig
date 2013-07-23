@@ -1,13 +1,7 @@
 mConfigData = {}
 
-local frame = CreateFrame("Frame")
-frame:RegisterEvent("VARIABLES_LOADED")
-frame:SetScript("OnEvent", function()
-    for _,c in pairs(mConfigAllConfigs) do
-        c.values=mConfigData[c.addOn][c.key]
-        c:update()
-    end
-end)
+mConfigAllConfigs = {}
+
 
 local mConfigVersion = 1
 if M_CONFIG_VERSION == nil or MCONFIG_VERSION < mConfigVersion then
@@ -17,7 +11,30 @@ local OPTIONS_WIDTH = 400
 MCONFIG_VERSION = mConfigVersion
 mConfig = {}
 
-mConfigAllConfigs = {}
+local function testMConfig()
+    local veryLongText = " Oh Lord, won't you buy me a Mercedes Benz? My friends all drive Porsches, I must make amends. Worked hard all my lifetime, no help from my friends,So Lord, won't you buy me a Mercedes Benz ? "
+    local testConfig = mConfig:createConfig("mConfig Test","mConfig","Default",{"/mc"})
+    testConfig:addCheckBox("checkTest", "CheckBox Text: ".. veryLongText, "CheckBox Tooltip Text", false)
+    testConfig:addTextBox("textTest", "TextBox Text: ".. veryLongText, "TextBox Tooltip Text", "giulia")
+    testConfig:addNumericBox("numericTest", "NumericBox Text: ".. veryLongText, "NumericBox Tooltip Text", 42)
+    testConfig:addSlider("sliderText", "Slider Text: ".. veryLongText, "Slider Tooltip Text", 1, 10, 4, 1)
+    testConfig:addButton("Button Text: Ignores Width!", "Button Tooltip Text", function(cfg) print("You pressed the Button! (Config @" .. tostring(cfg) .. ")") end)
+    testConfig:addDropDown("dropdownTest", "Drop Down Text: " .. veryLongText, "DropDown Tooltip", {"alpha", "beta", "gamma"}, 2)
+end
+
+local frame = CreateFrame("Frame")
+frame:RegisterEvent("VARIABLES_LOADED")
+frame:SetScript("OnEvent", function()
+    for _,c in pairs(mConfigAllConfigs) do
+        if mConfigData[c.addOn] then
+            c.values=mConfigData[c.addOn][c.key]
+            c:update()
+        else
+            print(c.addOn)
+        end
+    end
+    --testMConfig()
+end)
 
 local _nextElementId = 1
 local function nextElementId()
@@ -25,6 +42,8 @@ local function nextElementId()
     _nextElementId = _nextElementId + 1
     return name
 end
+
+
 
 local function addTooltip(frame, title, text)
     if text and title then
@@ -41,7 +60,7 @@ local function addTooltip(frame, title, text)
     end
 end
 
-function mConfig:addConfigButton(text,tooltip,fn)
+function mConfig:addButton(text,tooltip,fn)
     local button = CreateFrame("Button", nil, self.frames.scrollFrame)
     button:SetNormalFontObject("GameFontNormal")
     button:SetSize(OPTIONS_WIDTH, OPTIONS_HEIGHT)
@@ -209,6 +228,59 @@ function mConfig:addSlider(key, text, tooltip, minValue, maxValue, defaultValue,
 end
 
 
+function mConfig:addDropDown(key, text, tooltip, values, defaultValue)
+    if not defaultValue then defaultValue = 1 end
+    if not self.values[key] then self.values[key] = defaultValue end
+
+    local optionFrame = CreateFrame("Frame", nil, self.frames.scrollFrame)
+    optionFrame:SetSize(OPTIONS_WIDTH, OPTIONS_HEIGHT)
+    addTooltip(optionFrame, text, tooltip)
+    optionFrame:Show()
+
+
+    local optionText = optionFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    optionText:SetPoint("LEFT",optionFrame,20,-6)
+    optionText:SetWidth(OPTIONS_WIDTH-180)
+    optionText:SetHeight(OPTIONS_HEIGHT)
+    optionText:SetText(text .. "|r |cffffffff (" .. (math.floor(self.values[key]*10)/10) .. ")|r")
+    optionText:SetJustifyH("LEFT")
+
+    local dropdown = CreateFrame("Frame", nextElementId(), optionFrame, "UIDropDownMenuTemplate")
+    local InitializeDropdown = function()
+        local info = UIDropDownMenu_CreateInfo()
+        local configValues = self.values
+        for k,v in pairs(values) do
+                info.text = v;
+                info.value = k;
+                info.func  = function(self)
+                    UIDropDownMenu_SetSelectedValue(dropdown, self.value)
+                    configValues[key] = self.value
+                    UIDropDownMenu_SetText(dropdown, v)
+                end
+                info.checked = nil
+                info.notCheckable = 1
+                UIDropDownMenu_AddButton(info, 1);
+        end
+    end
+
+    dropdown:SetPoint("RIGHT",optionFrame, 0,-8)
+    UIDropDownMenu_SetWidth(dropdown, 110);
+    UIDropDownMenu_JustifyText(dropdown, "LEFT");
+    UIDropDownMenu_Initialize(dropdown, InitializeDropdown)
+    self.defaults[key] = defaultValue
+    self.setters[key] = function(v) 
+        UIDropDownMenu_SetSelectedValue(dropdown, v)
+        for k,text in pairs(values) do
+            if k == v then UIDropDownMenu_SetText(dropdown, text) end
+        end
+    end
+    self.setters[key](defaultValue)
+    table.insert(self.frames.options, optionFrame)
+    
+    self:update()
+end
+
+
 
 function mConfig:update()
     local numItems = #(self.frames.options)
@@ -308,7 +380,7 @@ function mConfig:createConfig(titleText,addOn,key,slashCommands)
     text:SetText(titleText)
     title:Show()
   
-    data.frames.scrollFrame = CreateFrame("ScrollFrame", "MyFirstNotReallyScrollFrame", data.frames.configFrame, "FauxScrollFrameTemplate")
+    data.frames.scrollFrame = CreateFrame("ScrollFrame", "mConfigScrollFrame", data.frames.configFrame, "FauxScrollFrameTemplate")
     data.frames.scrollFrame:SetPoint("CENTER",data.frames.configFrame)
     data.frames.scrollFrame:SetWidth(OPTIONS_WIDTH)
     data.frames.scrollFrame:SetHeight((DISPLAYED_OPTIONS) * OPTIONS_HEIGHT + 20)
@@ -373,4 +445,5 @@ function mConfig:createConfig(titleText,addOn,key,slashCommands)
 end
 
 end
+
 
