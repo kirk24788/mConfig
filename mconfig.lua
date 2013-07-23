@@ -17,9 +17,12 @@ local function testMConfig()
     testConfig:addCheckBox("checkTest", "CheckBox Text: ".. veryLongText, "CheckBox Tooltip Text", false)
     testConfig:addTextBox("textTest", "TextBox Text: ".. veryLongText, "TextBox Tooltip Text", "giulia")
     testConfig:addNumericBox("numericTest", "NumericBox Text: ".. veryLongText, "NumericBox Tooltip Text", 42)
+    testConfig:addText("Short Text - no tooltip")
+    testConfig:addText("Text Text: ".. veryLongText, "Text Segment Test")
     testConfig:addSlider("sliderText", "Slider Text: ".. veryLongText, "Slider Tooltip Text", 1, 10, 4, 1)
     testConfig:addButton("Button Text: Ignores Width!", "Button Tooltip Text", function(cfg) print("You pressed the Button! (Config @" .. tostring(cfg) .. ")") end)
     testConfig:addDropDown("dropdownTest", "Drop Down Text: " .. veryLongText, "DropDown Tooltip", {"alpha", "beta", "gamma"}, 2)
+    testConfig:addDropDown("dropdownNamedTest", "Drop Down Named Keys", "DropDown Tooltip 2", {ALPHA="alpha", BETA="beta", GAMMA="gamma"}, "ALPHA")
 end
 
 local frame = CreateFrame("Frame")
@@ -29,11 +32,10 @@ frame:SetScript("OnEvent", function()
         if mConfigData[c.addOn] then
             c.values=mConfigData[c.addOn][c.key]
             c:update()
-        else
-            print(c.addOn)
+--       else
+--            print(c.addOn)
         end
     end
-    --testMConfig()
 end)
 
 local _nextElementId = 1
@@ -60,6 +62,14 @@ local function addTooltip(frame, title, text)
     end
 end
 
+local testMode = false
+function mConfig:testMode()
+    if not testMode then
+        testMConfig()
+        testMode = true
+    end
+end
+
 function mConfig:addButton(text,tooltip,fn)
     local button = CreateFrame("Button", nil, self.frames.scrollFrame)
     button:SetNormalFontObject("GameFontNormal")
@@ -73,6 +83,23 @@ function mConfig:addButton(text,tooltip,fn)
     table.insert(self.frames.options, button)
     
     self:update()
+end
+
+function mConfig:addText(text, tooltip)
+
+    local optionFrame = CreateFrame("Frame", nil, self.frames.scrollFrame)
+    optionFrame:SetSize(OPTIONS_WIDTH, OPTIONS_HEIGHT)
+    addTooltip(optionFrame, text, tooltip)
+
+    local optionText = optionFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    optionText:SetPoint("LEFT",optionFrame,20,-6)
+    optionText:SetWidth(OPTIONS_WIDTH-40)
+    optionText:SetHeight(OPTIONS_HEIGHT)
+    optionText:SetText(text)
+    optionText:SetJustifyH("CENTER")
+    optionText:SetJustifyV("CENTER")
+    
+    table.insert(self.frames.options, optionFrame)
 end
 
 function mConfig:addCheckBox(key, text, tooltip, defaultValue)
@@ -242,7 +269,7 @@ function mConfig:addDropDown(key, text, tooltip, values, defaultValue)
     optionText:SetPoint("LEFT",optionFrame,20,-6)
     optionText:SetWidth(OPTIONS_WIDTH-180)
     optionText:SetHeight(OPTIONS_HEIGHT)
-    optionText:SetText(text .. "|r |cffffffff (" .. (math.floor(self.values[key]*10)/10) .. ")|r")
+    optionText:SetText(text)
     optionText:SetJustifyH("LEFT")
 
     local dropdown = CreateFrame("Frame", nextElementId(), optionFrame, "UIDropDownMenuTemplate")
@@ -361,6 +388,7 @@ function mConfig:createConfig(titleText,addOn,key,slashCommands)
     data.frames.configFrame:RegisterForDrag("LeftButton")
     data.frames.configFrame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     data.frames.configFrame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
+    data.frames.configFrame:SetClampedToScreen(true)
     data.frames.configFrame:SetBackdrop({
         --   bgFile="Interface\\DialogFrame\\UI-DialogBox-Background",
         bgFile = "Interface/Tooltips/UI-Tooltip-Background",
@@ -380,12 +408,11 @@ function mConfig:createConfig(titleText,addOn,key,slashCommands)
     text:SetText(titleText)
     title:Show()
   
-    data.frames.scrollFrame = CreateFrame("ScrollFrame", "mConfigScrollFrame", data.frames.configFrame, "FauxScrollFrameTemplate")
+    data.frames.scrollFrame = CreateFrame("ScrollFrame", "mConfigScrollFrame"..nextElementId(), data.frames.configFrame, "FauxScrollFrameTemplate")
     data.frames.scrollFrame:SetPoint("CENTER",data.frames.configFrame)
     data.frames.scrollFrame:SetWidth(OPTIONS_WIDTH)
-    data.frames.scrollFrame:SetHeight((DISPLAYED_OPTIONS) * OPTIONS_HEIGHT + 20)
+    data.frames.scrollFrame:SetHeight(DISPLAYED_OPTIONS * OPTIONS_HEIGHT + 20)
     data.frames.scrollFrame:Show()
-    data.frames.scrollFrame:SetClampedToScreen(true)
     data.frames.scrollFrame:SetBackdrop({
         bgFile="Interface\\DialogFrame\\UI-DialogBox-Background",
         -- bgFile = "Interface/Tooltips/UI-Tooltip-Background",
@@ -395,6 +422,9 @@ function mConfig:createConfig(titleText,addOn,key,slashCommands)
     data.frames.scrollFrame:SetScript("OnVerticalScroll", function(self, offset)
         FauxScrollFrame_OnVerticalScroll(self, offset, OPTIONS_HEIGHT, function() data:update() end)
     end)
+    
+    --data.frames.scrollFrame:SetScript("OnUpdate", function() data:update() end)
+
 
     local button = CreateFrame("Button", nil, data.frames.configFrame)
     button:SetPoint("BOTTOM", data.frames.configFrame, "BOTTOM", 0, 10)
