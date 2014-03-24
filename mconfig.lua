@@ -235,6 +235,7 @@ function mConfig:addSlider(key, text, tooltip, minValue, maxValue, defaultValue,
     slider.minValue, slider.maxValue = slider:GetMinMaxValues()
     slider:SetValue(self.values[key])
     slider:SetValueStep(stepSize)
+    slider:SetObeyStepOnDrag(true)
     slider:SetWidth(120)
     --slider:SetHeight(20)
     slider:EnableMouse(true)
